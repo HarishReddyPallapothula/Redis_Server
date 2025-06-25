@@ -7,25 +7,27 @@ import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
-//TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or
-// click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
+
 public class Main {
     public static void main(String[] args) throws IOException {
 //        String CRLF = "\r\n";
         ServerSocket serverSocket = null;
         Socket clientSocket = null;
         int port = 6379;
+        ExecutorService executorService = Executors.newFixedThreadPool(10);
         try {
             serverSocket = new ServerSocket(port);
 
             serverSocket.setReuseAddress(true);
             // Wait for connection from client.
-            clientSocket = serverSocket.accept();
-
-            handleResponse(clientSocket);
-
-            OutputStream outputStream = clientSocket.getOutputStream();
+            while(true){
+                clientSocket = serverSocket.accept();
+                final Socket clientCopy = clientSocket;
+                executorService.submit(() -> handleClient(clientCopy)) ;
+            }
 
 
         } catch (IOException e) {
@@ -41,7 +43,7 @@ public class Main {
         }
     }
 
-    private static void handleResponse(Socket socket){
+    private static void handleClient(Socket socket){
         try(BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             OutputStream output = socket.getOutputStream()){
             String command;
